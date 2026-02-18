@@ -1,0 +1,79 @@
+{
+  "env": {
+    "ENABLE_TOOL_SEARCH": "auto:5",
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash",
+      "Edit",
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Task",
+      "mcp__supabase__*"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c \"docker ps -a --filter 'name=mcp-' --filter 'status=exited' --format '{{.Names}}' | xargs -r docker start 2>/dev/null; exit 0\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "mcp__supabase__*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'INPUT=\"$TOOL_INPUT\"; if echo \"$INPUT\" | grep -iEq \"(DELETE[[:space:]]+FROM|DROP[[:space:]]+(TABLE|SCHEMA|DATABASE)|TRUNCATE|ALTER[[:space:]]+TABLE.*DROP)\"; then echo \"BLOCKED: Destructive SQL operation\" >&2; exit 2; fi; if echo \"$INPUT\" | grep -iEq \"UPDATE[[:space:]]+[^[:space:]]+[[:space:]]+SET\"; then echo \"$INPUT\" | grep -iqE \"WHERE\" || { echo \"BLOCKED: UPDATE without WHERE\" >&2; exit 2; }; fi; exit 0'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "mcp__supabase*|mcp__lemlist*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'mkdir -p ~/.claude/logs && echo \"$(date \"+%Y-%m-%d %H:%M:%S\") - $TOOL_NAME\" >> ~/.claude/logs/mcp-calls.log'",
+            "async": true
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "Verifie que cette tache est reellement terminee avec un output de qualite. Si le travail est incomplet, des tests echouent, ou le livrable ne correspond pas aux exigences, explique ce qui manque en francais. Sinon, valide."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/scripts/notify-telegram.sh",
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true
+}
