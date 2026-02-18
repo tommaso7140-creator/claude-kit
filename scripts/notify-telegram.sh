@@ -13,12 +13,11 @@
 [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ] && exit 0
 
 TIMESTAMP=$(date +"%H:%M")
-SESSION_ID=$(cat /dev/stdin 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('session_id','unknown')[:8])" 2>/dev/null || echo "unknown")
-MESSAGE="Claude Code termine — session $SESSION_ID ($TIMESTAMP)"
+MESSAGE="Claude Code termine ($TIMESTAMP)"
 
 curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-  -H "Content-Type: application/json" \
-  -d "{\"chat_id\":\"${TELEGRAM_CHAT_ID}\",\"text\":\"${MESSAGE}\",\"parse_mode\":\"Markdown\"}" \
+  --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+  --data-urlencode "text=${MESSAGE}" \
   --max-time 10 > /dev/null 2>&1
 
 exit 0
