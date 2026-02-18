@@ -57,4 +57,3 @@ claude mcp add
 ## Stack
 
 Python · JavaScript · Supabase · n8n · Make · Klaviyo · Lemlist · Notion
-test push automatique
